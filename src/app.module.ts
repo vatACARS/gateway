@@ -4,9 +4,11 @@ import { AppService } from './app.service';
 import { AcarsGateway } from './acars/acars.gateway';
 import { DataModule } from './data/data.module';
 
+import { AuthenticationGateway } from './acars/authorities';
+
 @Module({
   imports: [DataModule],
   controllers: [AppController],
-  providers: [AppService, AcarsGateway],
+  providers: [AppService, AcarsGateway, AuthenticationGateway],
 })
 export class AppModule {}

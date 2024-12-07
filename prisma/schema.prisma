@@ -1,0 +1,18 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("database_url")
+}
+
+model ATSUInformation {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  station_code  String          @unique
+  opened        DateTime
+  cid           String          @unique
+  sectors       Json
+  approxLoc     Json
+}

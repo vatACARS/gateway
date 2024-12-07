@@ -2,6 +2,7 @@ import { Test } from '@nestjs/testing';
 import { AcarsGateway } from './acars.gateway';
 import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
+import { AuthenticationGateway } from './authorities';
 
 async function createNestApp(...gateways: any): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({
@@ -16,7 +17,7 @@ describe('ChatGateway', () => {
   let ioClient: Socket;
 
   beforeAll(async () => {
-    app = await createNestApp(AcarsGateway);
+    app = await createNestApp(AcarsGateway, AuthenticationGateway);
     gateway = app.get<AcarsGateway>(AcarsGateway);
     ioClient = io('http://localhost:3000', {
       autoConnect: false,
