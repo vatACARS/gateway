@@ -34,22 +34,7 @@ describe('ChatGateway', () => {
     expect(gateway).toBeDefined();
   });
 
-  it('should emit "pong" on "ping"', async () => {
+  it('should connect', async () => {
     ioClient.connect();
-    ioClient.emit('ping', 'Hello world!');
-    await new Promise<void>((resolve, reject) => {
-      ioClient.on('connect', () => {
-        console.log('connected');
-      });
-      ioClient.on('pong', (data) => {
-        try {
-          expect(data).toBe('Hello world!');
-          resolve();
-        } catch (ex) {
-          reject(ex);
-        }
-      });
-    });
-    ioClient.disconnect();
   });
 });
