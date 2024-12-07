@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { Logger } from '@nestjs/common';
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -6,9 +6,9 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-} from "@nestjs/websockets";
+} from '@nestjs/websockets';
 
-import { Server } from "socket.io";
+import { Server } from 'socket.io';
 
 @WebSocketGateway()
 export class AcarsGateway
@@ -19,10 +19,10 @@ export class AcarsGateway
   @WebSocketServer() io: Server;
 
   afterInit() {
-    this.logger.log("Initialised");
+    this.logger.log('Initialised');
   }
 
-  handleConnection(client: any, ...args: any[]) {
+  handleConnection(client: any) {
     const { sockets } = this.io.sockets;
 
     this.logger.log(`Client id: ${client.id} connected`);
@@ -33,13 +33,13 @@ export class AcarsGateway
     this.logger.log(`Cliend id:${client.id} disconnected`);
   }
 
-  @SubscribeMessage("ping")
+  @SubscribeMessage('ping')
   handleMessage(client: any, data: any) {
     this.logger.log(`Message received from client id: ${client.id}`);
     this.logger.debug(`Payload: ${data}`);
     return {
-      event: "pong",
-      data
+      event: 'pong',
+      data,
     };
   }
 }

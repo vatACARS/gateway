@@ -1,7 +1,7 @@
-import { Test } from "@nestjs/testing";
-import { AcarsGateway } from "./acars.gateway";
-import { INestApplication } from "@nestjs/common";
-import { Socket, io } from "socket.io-client";
+import { Test } from '@nestjs/testing';
+import { AcarsGateway } from './acars.gateway';
+import { INestApplication } from '@nestjs/common';
+import { Socket, io } from 'socket.io-client';
 
 async function createNestApp(...gateways: any): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({
@@ -10,7 +10,7 @@ async function createNestApp(...gateways: any): Promise<INestApplication> {
   return testingModule.createNestApplication();
 }
 
-describe("ChatGateway", () => {
+describe('ChatGateway', () => {
   let gateway: AcarsGateway;
   let app: INestApplication;
   let ioClient: Socket;
@@ -18,9 +18,9 @@ describe("ChatGateway", () => {
   beforeAll(async () => {
     app = await createNestApp(AcarsGateway);
     gateway = app.get<AcarsGateway>(AcarsGateway);
-    ioClient = io("http://localhost:3000", {
+    ioClient = io('http://localhost:3000', {
       autoConnect: false,
-      transports: ["websocket", "polling"],
+      transports: ['websocket', 'polling'],
     });
 
     app.listen(3000);
@@ -30,20 +30,20 @@ describe("ChatGateway", () => {
     await app.close();
   });
 
-  it("should be defined", () => {
+  it('should be defined', () => {
     expect(gateway).toBeDefined();
   });
 
   it('should emit "pong" on "ping"', async () => {
     ioClient.connect();
-    ioClient.emit("ping", "Hello world!");
+    ioClient.emit('ping', 'Hello world!');
     await new Promise<void>((resolve, reject) => {
-      ioClient.on("connect", () => {
-        console.log("connected");
+      ioClient.on('connect', () => {
+        console.log('connected');
       });
-      ioClient.on("pong", (data) => {
+      ioClient.on('pong', (data) => {
         try {
-          expect(data).toBe("Hello world!");
+          expect(data).toBe('Hello world!');
           resolve();
         } catch (ex) {
           reject(ex);
