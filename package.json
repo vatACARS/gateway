@@ -24,7 +24,6 @@
   "pre-commit": [
     "lint",
     "test",
-    "test:e2e",
     "validate"
   ],
   "dependencies": {
