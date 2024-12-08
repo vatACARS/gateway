@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { AcarsGateway } from './acars/acars.gateway';
 import { DataModule } from './data/data.module';
 
-import { AuthenticationGateway } from './acars/authorities';
+import { AuthenticationGateway } from './acars/gateways';
 
 @Module({
   imports: [DataModule],

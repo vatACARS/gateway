@@ -1,6 +1,7 @@
 import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { Socket } from 'ws';
+
 import { AuthorityCategory, AuthorityAction } from './authentication.enums';
 
 @WebSocketGateway({
@@ -22,7 +23,7 @@ export class AuthenticationGateway {
       return;
     }
 
-    this.logger.log(`${clientId} AUTH:${AuthorityAction[data.Action]}`);
+    this.logger.log(`${clientId} actioned ${AuthorityAction[data.Action]}`);
 
     switch (data.Action) {
       case AuthorityAction.Authenticate:
