@@ -8,11 +8,28 @@ datasource db {
   url      = env("database_url")
 }
 
-model ATSUInformation {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
-  station_code  String          @unique
-  opened        DateTime
-  cid           String          @unique
-  sectors       Json
-  approxLoc     Json
+model AcarsUser {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  oauthAccounts OAuthAccount[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model OAuthAccount {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  provider      String    // "vatsim", "discord"
+  providerId    String
+  acarsUser     String    @db.ObjectId // Foreign key for AcarsUser
+  
+  accessToken   String
+  refreshToken  String
+  tokenExpiry   DateTime
+
+  meta          Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          AcarsUser @relation(fields: [acarsUser], references: [id])
 }
