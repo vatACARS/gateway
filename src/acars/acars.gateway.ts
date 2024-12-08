@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AuthenticationGateway } from './gateways';
+import { AuthenticationGateway, StationGateway } from './gateways';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -23,7 +23,10 @@ export class AcarsGateway
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly authenticationGateway: AuthenticationGateway) {}
+  constructor(
+    private readonly authenticationGateway: AuthenticationGateway,
+    private readonly stationGateway: StationGateway,
+  ) {}
 
   private clients = new Map<string, Socket>();
 

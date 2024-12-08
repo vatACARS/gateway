@@ -5,10 +5,10 @@ export const defineDeleteStation = (agenda, stationService: StationService) => {
     const { stationCode } = job.attrs.data;
 
     try {
-      const station = await stationService.getStation({ code: stationCode });
+      const station = await stationService.getStationByCode(stationCode);
       if (!station) return;
 
-      await stationService.deleteStation({ code: stationCode });
+      await stationService.deleteStationByCode(stationCode);
     } catch {}
   });
 };
