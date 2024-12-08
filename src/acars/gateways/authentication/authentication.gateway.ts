@@ -14,7 +14,10 @@ export class AuthenticationGateway {
   @SubscribeMessage(AuthorityCategory.Authentication)
   async handleAuthentication(
     client: Socket,
-    data: { Action: AuthorityAction; [key: string]: any },
+    data: {
+      Action: AuthorityAction;
+      [key: string]: any;
+    },
   ) {
     const clientId = (client as any)._id;
 
