@@ -40,12 +40,12 @@ model OAuthAccount {
 }
 
 model Station {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  logonCode   String    @unique
-  acarsUser   String    @unique @db.ObjectId // Foreign key for AcarsUser
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  logonCode   String      @unique
+  acarsUser   String?     @unique @db.ObjectId // Foreign key for AcarsUser
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 
-  user        AcarsUser @relation(fields: [acarsUser], references: [id])
+  user        AcarsUser?  @relation(fields: [acarsUser], references: [id])
 }
