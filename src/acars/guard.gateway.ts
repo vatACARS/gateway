@@ -2,20 +2,33 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
-import { AuthenticationService } from './gateways/authentication/authentication.service';
 import { Socket } from 'ws';
+
+import { Enum } from './gateways';
 
 @Injectable()
 export class Guard implements CanActivate {
-  constructor(private readonly authService: AuthenticationService) {}
+  private readonly logger = new Logger(Guard.name);
+  constructor() {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const client = context.switchToWs().getClient<Socket>();
+    const handler = context.getHandler().name;
+    const event = context.switchToWs().getData()?.Action || 'unknown';
 
-    if (!(client as any)._authenticated)
-      throw new UnauthorizedException('User is not authenticated');
+    if (!(client as any)._authenticated) {
+      this.logger.warn(
+        `${(client as any)._id} (no auth) tried to use ${handler}:${Enum.AuthorityAction[event]}`,
+      );
+      return client.send(
+        JSON.stringify({
+          status: 'ERROR',
+          message: 'You are not authenticated.',
+        }),
+      );
+    }
 
     return true;
   }
