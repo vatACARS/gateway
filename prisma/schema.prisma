@@ -14,6 +14,7 @@ model AcarsUser {
 
   oauthAccounts OAuthAccount[]
   apiToken      String?
+  isConnected   Boolean   @default(false)
   isSuspended   Boolean   @default(false)
 
   createdAt     DateTime  @default(now())
@@ -35,4 +36,14 @@ model OAuthAccount {
   updatedAt     DateTime @updatedAt
 
   user          AcarsUser @relation(fields: [acarsUser], references: [id])
+}
+
+model Station {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  acarsUser   String    @db.ObjectId // Foreign key for AcarsUser
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        AcarsUser @relation(fields: [acarsUser], references: [id])
 }
