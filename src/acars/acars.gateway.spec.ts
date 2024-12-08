@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { AcarsGateway } from './acars.gateway';
 import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
-import { AuthenticationGateway } from './authorities';
+import { AuthenticationGateway } from './gateways';
 
 async function createNestApp(...gateways: any): Promise<INestApplication> {
   const testingModule = await Test.createTestingModule({

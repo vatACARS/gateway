@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AuthenticationGateway } from './authorities';
+import { AuthenticationGateway } from './gateways';
 
 @WebSocketGateway({
   path: '/gateway',
