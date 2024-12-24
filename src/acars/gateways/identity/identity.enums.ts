@@ -1,5 +1,5 @@
 export enum AuthorityCategory {
-  Client = 2,
+  Identity = 2,
 }
 
 export enum AuthorityAction {

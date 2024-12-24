@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../_lib/prisma.service';
 import { Station, Prisma } from 'prisma';
 
@@ -51,15 +51,12 @@ export class StationService {
     logonCode: string,
     stationData: Prisma.StationCreateInput,
     userId: string,
-  ): Promise<Station> {
+  ): Promise<Station | null> {
     const existingStation = await this.prisma.station.findUnique({
       where: { logonCode },
     });
     if (existingStation) {
-      if (existingStation.acarsUser)
-        throw new BadRequestException(
-          `Station with logonCode "${logonCode}" already is occupied.`,
-        );
+      if (existingStation.acarsUser) return null;
     } else {
       const newStation = await this.createStation({
         logonCode,
@@ -73,8 +70,35 @@ export class StationService {
           },
         },
       });
+      await this.prisma.acarsUser.update({
+        where: { id: userId },
+        data: {
+          currPosition: {
+            connect: { id: newStation.id },
+          },
+        },
+      });
 
       return newStation;
     }
+  }
+
+  public async deallocateStationFromUser(userId: string): Promise<boolean> {
+    const user = await this.prisma.acarsUser.findUnique({
+      where: { id: userId },
+      include: { currPosition: true },
+    });
+    if (!user) return false;
+    if (!user.currPosition) return false;
+    await this.prisma.acarsUser.update({
+      where: { id: userId },
+      data: {
+        currPosition: {
+          disconnect: true,
+        },
+      },
+    });
+    await this.deleteStation({ id: user.currPosition.id });
+    return true;
   }
 }

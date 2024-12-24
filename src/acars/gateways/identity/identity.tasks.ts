@@ -1,4 +1,4 @@
-import { StationService } from './station.service';
+import { StationService } from './identity.service';
 
 export const defineDeleteStation = (agenda, stationService: StationService) => {
   agenda.define('delete_station', async (job) => {
