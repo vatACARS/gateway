@@ -21,28 +21,28 @@ export class MessageGateway {
   @SubscribeMessage(AuthorityCategory.Station)
   async handleMessage_Station /*client: Socket,
     data: {
-      Action: AuthorityAction;
+      action: AuthorityAction;
       [key: string]: any;
     },*/() {}
 
   @SubscribeMessage(AuthorityCategory.CPDLC)
   async handleMessage_CPDLC /*client: Socket,
     data: {
-      Action: AuthorityAction;
+      action: AuthorityAction;
       [key: string]: any;
     },*/() {}
 
   @SubscribeMessage(AuthorityCategory.Telex)
   async handleMessage_Telex /*client: Socket,
     data: {
-      Action: AuthorityAction;
+      action: AuthorityAction;
       [key: string]: any;
     },*/() {}
 
   @SubscribeMessage(AuthorityCategory.Administrative)
   async handleMessage_Administrative /*client: Socket,
     data: {
-      Action: AuthorityAction;
+      action: AuthorityAction;
       [key: string]: any;
     },*/() {}
 }
