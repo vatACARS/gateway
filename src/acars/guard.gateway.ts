@@ -16,7 +16,7 @@ export class Guard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const client = context.switchToWs().getClient<Socket>();
     const handler = context.getHandler().name;
-    const event = context.switchToWs().getData()?.Action || 'unknown';
+    const event = context.switchToWs().getData()?.action || 'unknown';
 
     if (!(client as any)._authenticated) {
       this.logger.warn(
