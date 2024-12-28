@@ -6,6 +6,7 @@ import { AuthorityCategory, AuthorityAction } from './authentication.enums';
 
 import { createResponse } from '../../../_lib/apiResponse';
 import { AuthenticationService } from './authentication.service';
+import { ClientsService } from 'src/services/clients.service';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -14,7 +15,10 @@ import { AuthenticationService } from './authentication.service';
 export class AuthenticationGateway {
   private readonly logger = new Logger(AuthenticationGateway.name);
 
-  constructor(private authenticationService: AuthenticationService) {}
+  constructor(
+    private authenticationService: AuthenticationService,
+    private clientsService: ClientsService,
+  ) {}
 
   @SubscribeMessage(AuthorityCategory.Authentication)
   async handleAuthentication(
@@ -69,6 +73,9 @@ export class AuthenticationGateway {
         (client as any)._token = data.token;
         (client as any)._userId = user.id;
         (client as any)._id = user.username;
+
+        this.clientsService.removeClient(clientId);
+        this.clientsService.addClient(clientId, client);
 
         this.logger.log(
           `${clientId} authenticated successfully as ${(client as any)._id} (${(client as any)._userId})`,
