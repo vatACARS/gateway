@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AuthenticationGateway, StationGateway } from './gateways';
+import { AuthenticationGateway, IdentityGateway } from './gateways';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -25,7 +25,7 @@ export class AcarsGateway
 
   constructor(
     private readonly authenticationGateway: AuthenticationGateway,
-    private readonly stationGateway: StationGateway,
+    private readonly stationGateway: IdentityGateway,
   ) {}
 
   private clients = new Map<string, Socket>();
@@ -35,7 +35,7 @@ export class AcarsGateway
   }
 
   handleConnection(client: Socket) {
-    const clientId = uuidv4();
+    const clientId = uuidv4().split('-')[0];
     (client as any)._id = clientId;
     this.logger.log(`${clientId} connected.`);
 
