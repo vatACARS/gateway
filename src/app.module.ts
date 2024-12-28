@@ -3,13 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AcarsGateway } from './acars/acars.gateway';
 import { DataModule } from './data/data.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { PrismaService } from './_lib/prisma.service';
 import { AgendaService } from './_lib/agenda.service';
 
 import {
   AuthenticationGateway,
-  StationGateway,
+  IdentityGateway,
   MessageGateway,
   AuthenticationService,
   StationService,
@@ -17,7 +18,7 @@ import {
 } from './acars/gateways';
 
 @Module({
-  imports: [DataModule],
+  imports: [ScheduleModule.forRoot(), DataModule],
   controllers: [AppController],
   providers: [
     AppService,
@@ -27,7 +28,7 @@ import {
     AcarsGateway,
 
     AuthenticationGateway,
-    StationGateway,
+    IdentityGateway,
     MessageGateway,
 
     AuthenticationService,
