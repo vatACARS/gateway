@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../_lib/prisma.service';
+import { ClientsService } from 'src/services/clients.service';
+import { createResponse } from 'src/_lib/apiResponse';
+import { v4 as uuidv4 } from 'uuid';
+import { AuthorityAction, AuthorityCategory } from './message.enums';
 
 @Injectable()
 export class MessageService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private clientsService: ClientsService,
+  ) {}
 
   async sendCPDLCMessage(
     sender: string,
@@ -41,6 +48,21 @@ export class MessageService {
         responseCode,
       },
     });
+
+    const recipientSocket =
+      this.clientsService.getClientByStationCode(recipient);
+    if (recipientSocket)
+      recipientSocket.send(
+        createResponse('success', uuidv4().split('-')[0], '', {
+          gateway: AuthorityCategory.CPDLC,
+          action: AuthorityAction.ReceiveCPDLCMessage,
+          cpdlc: {
+            sender: senderStation.logonCode,
+            responseCode,
+            message,
+          },
+        }),
+      );
 
     return { success: true, message: 'Message sent' };
   }
