@@ -23,3 +23,10 @@ export enum AuthorityAction {
   Broadcast = 60,
   ServerAnnouncement = 62,
 }
+
+export enum ResponseCode {
+  None = 'N',
+  WilcoUnable = 'WU',
+  Roger = 'R',
+  Affirmative = 'Y',
+}
