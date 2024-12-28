@@ -10,4 +10,14 @@ export class DataController {
   getNetworkData(): object {
     return this.dataService.getNetworkData();
   }
+
+  @Get('/data/stations')
+  getStationData(): object {
+    return this.dataService.getStationData();
+  }
+
+  @Get('/data/messages')
+  getMessageData(): object {
+    return this.dataService.getMessageData();
+  }
 }

@@ -1,15 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '../_lib/prisma.service';
 
 @Injectable()
 export class DataService {
   private networkData: any = {};
+  private messageData: any = {};
+  private stationData: any = {};
 
-  constructor() {
+  constructor(private prisma: PrismaService) {
     this.fetchNetworkData();
+    this.fetchACARSData();
   }
 
-  @Cron('0 * * * * *')
+  @Cron(CronExpression.EVERY_MINUTE)
   async fetchNetworkData() {
     const response = await fetch(
       'https://vatsim-radar.com/api/data/vatsim/data',
@@ -26,5 +30,26 @@ export class DataService {
     this.networkData = response;
   }
 
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  async fetchACARSData() {
+    this.messageData = await this.prisma.message.findMany();
+    this.stationData = await this.prisma.station.findMany();
+  }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async deleteOldMessages() {
+    await this.prisma.message.deleteMany({
+      where: {
+        createdAt: {
+          lt: new Date(Date.now() - 60 * 120 * 1000),
+        },
+      },
+    });
+  }
+
   getNetworkData = () => this.networkData;
+
+  getStationData = () => this.stationData;
+
+  getMessageData = () => this.messageData;
 }
