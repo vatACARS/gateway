@@ -1,5 +1,5 @@
-import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
+import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
 import { Socket } from 'ws';
 
 import { AuthorityCategory, AuthorityAction } from './authentication.enums';
@@ -62,13 +62,17 @@ export class AuthenticationGateway {
           );
         }
 
+        const user = await this.authenticationService.getAcarsUserByToken(
+          data.token,
+        );
         (client as any)._authenticated = true;
         (client as any)._token = data.token;
-        (client as any)._userId = (
-          await this.authenticationService.getAcarsUserByToken(data.token)
-        ).id;
+        (client as any)._userId = user.id;
+        (client as any)._id = user.username;
 
-        this.logger.log(`${clientId} authenticated successfully.`);
+        this.logger.log(
+          `${clientId} authenticated successfully as ${(client as any)._id} (${(client as any)._userId})`,
+        );
         client.send(
           createResponse('success', data.requestId, 'Logged in successfully.'),
         );
