@@ -10,6 +10,7 @@ datasource db {
 
 model AcarsUser {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  username      String    @unique
   firstName     String
   lastName      String
   email         String    @unique
@@ -44,12 +45,31 @@ model OAuthAccount {
 }
 
 model Station {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  logonCode   String      @unique
-  acarsUser   String?     @unique @db.ObjectId // Foreign key for AcarsUser
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  logonCode         String      @unique
+  acarsUser         String?     @unique @db.ObjectId // Foreign key for AcarsUser
+  txCount           Int         @default(0)
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  sentMessages      Message[]   @relation("SenderRelation")
+  receivedMessages  Message[]   @relation("ReceiverRelation")
 
-  user        AcarsUser?  @relation(fields: [acarsUser], references: [id])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user              AcarsUser?  @relation(fields: [acarsUser], references: [id])
+}
+
+model Message {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  sender          String?
+  recipient       String?
+  responseCode    String
+  message         String
+  received        Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  senderUser      Station?  @relation("SenderRelation", fields: [sender], references: [id])
+  receipientUser  Station?  @relation("ReceiverRelation", fields: [recipient], references: [id])
 }
