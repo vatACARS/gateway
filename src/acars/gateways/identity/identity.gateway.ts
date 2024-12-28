@@ -19,8 +19,8 @@ import { createResponse } from '../../../_lib/apiResponse';
 })
 @UseGuards(Guard)
 @UseFilters(WsExceptionFilter)
-export class StationGateway implements OnGatewayDisconnect {
-  private readonly logger = new Logger(StationGateway.name);
+export class IdentityGateway implements OnGatewayDisconnect {
+  private readonly logger = new Logger(IdentityGateway.name);
 
   constructor(private stationService: StationService) {}
 
@@ -36,14 +36,14 @@ export class StationGateway implements OnGatewayDisconnect {
     const clientId = (client as any)._id;
 
     if (!data.requestId) {
-      this.logger.warn(`${clientId} sent a request with no requestId.`);
+      this.logger.warn(`${clientId} sent a request with no requestId`);
       return client.send(
         createResponse('error', 'gateway', 'Missing requestId.'),
       );
     }
 
     if (!data.action) {
-      this.logger.warn(`${clientId} sent a request with no AuthorityAction.`);
+      this.logger.warn(`${clientId} sent a request with no AuthorityAction`);
       return client.send(
         createResponse('error', data.requestId, 'Missing GatewayAction.'),
       );
@@ -88,7 +88,7 @@ export class StationGateway implements OnGatewayDisconnect {
         this.logger.log(
           `${clientId} logged into station "${data.stationCode}"`,
         );
-        (client as any)._station = station;
+        (client as any)._station = station.logonCode;
         return client.send(
           createResponse(
             'success',
@@ -102,7 +102,7 @@ export class StationGateway implements OnGatewayDisconnect {
   handleDisconnect(client: Socket) {
     if ((client as any)._station) {
       this.stationService.deallocateStationFromUser((client as any)._userId);
-      this.logger.log(`Deallocated ${client._station.logonCode} from client.`);
+      this.logger.log(`${client._id} deallocated from ${client._station}`);
     }
   }
 }
