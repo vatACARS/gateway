@@ -9,18 +9,19 @@ datasource db {
 }
 
 model AcarsUser {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  username      String    @unique
-  firstName     String
-  lastName      String
-  email         String    @unique
-  password      String
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  username          String    @unique
+  firstName         String
+  lastName          String
+  email             String    @unique
+  password          String
 
-  oauthAccounts OAuthAccount[]
-  currPosition  Station?
-  apiToken      String?   @unique
-  isConnected   Boolean   @default(false)
-  isSuspended   Boolean   @default(false)
+  oauthAccounts     OAuthAccount[]
+  currPosition      Station?
+  socketConnection  SocketConnection?
+  apiToken          String?   @unique
+  isConnected       Boolean   @default(false)
+  isSuspended       Boolean   @default(false)
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -42,6 +43,13 @@ model OAuthAccount {
 
   user          AcarsUser @relation(fields: [acarsUser], references: [id])
   @@unique([provider, providerId])
+}
+
+model SocketConnection {
+  id                String      @id @default(auto()) @map("_id") @db.ObjectId
+  acarsUser         String?     @unique @db.ObjectId
+  socketId          String      @unique
+  user              AcarsUser?  @relation(fields: [acarsUser], references: [id], onDelete: Cascade)
 }
 
 model Station {
