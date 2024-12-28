@@ -10,6 +10,7 @@ import { Server, Socket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
 import { AuthenticationGateway, IdentityGateway } from './gateways';
+import { ClientsService } from 'src/services/clients.service';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -26,20 +27,18 @@ export class AcarsGateway
   constructor(
     private readonly authenticationGateway: AuthenticationGateway,
     private readonly stationGateway: IdentityGateway,
+    private clientsService: ClientsService,
   ) {}
-
-  private clients = new Map<string, Socket>();
 
   afterInit() {
     this.logger.log('Gateway is online.');
   }
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket) {
     const clientId = uuidv4().split('-')[0];
     (client as any)._id = clientId;
     this.logger.log(`${clientId} connected.`);
 
-    // Set up authentication timeout
     setTimeout(() => {
       if (!(client as any)._authenticated) {
         this.logger.warn(`${clientId} failed to authenticate in time.`);
@@ -47,12 +46,12 @@ export class AcarsGateway
       }
     }, 5000);
 
-    this.clients.set(clientId, client);
+    this.clientsService.addClient(clientId, client);
   }
 
   handleDisconnect(client: Socket) {
     const clientId = (client as any)._id;
     this.logger.log(`${clientId} disconnected.`);
-    this.clients.delete(clientId);
+    this.clientsService.removeClient(clientId);
   }
 }
