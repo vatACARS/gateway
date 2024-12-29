@@ -21,11 +21,12 @@ import { createResponse } from '../../../_lib/apiResponse';
 @UseFilters(WsExceptionFilter)
 export class IdentityGateway implements OnGatewayDisconnect {
   private readonly logger = new Logger(IdentityGateway.name);
+  private pendingLogins = new Map<string, string>();
 
-  constructor(private stationService: StationService) {}
+  constructor(private stationService: StationService) { }
 
   @SubscribeMessage(AuthorityCategory.Identity)
-  async handleStation(
+  async handleIdentity(
     client: Socket,
     data: {
       action: AuthorityAction;
@@ -66,40 +67,106 @@ export class IdentityGateway implements OnGatewayDisconnect {
           );
         }
 
-        const station = await this.stationService.createStationAndAssignUser(
-          data.stationCode,
-          {},
-          client._userId,
-        );
+        this.pendingLogins.set(clientId, data.stationCode);
 
-        if (!station) {
+        try {
+          const station = await this.stationService.createStationAndAssignUser(
+            data.stationCode,
+            {},
+            client._userId,
+          );
+
+          if (!station || !this.pendingLogins.has(clientId)) {
+            this.logger.warn(
+              `${clientId} failed to provision station "${data.stationCode}"`,
+            );
+            return client.send(
+              createResponse(
+                'error',
+                data.requestId,
+                `Provisioning ${data.stationCode} failed.`,
+              ),
+            );
+          }
+
+          this.logger.log(
+            `${clientId} logged into station "${data.stationCode}"`,
+          );
+          (client as any)._station = station.logonCode;
+          return client.send(
+            createResponse(
+              'success',
+              data.requestId,
+              `Successfully provisioned ${data.stationCode} and assigned it to you.`,
+            ),
+          );
+        } catch (error) {
+          this.logger.error(`Error during login for ${clientId}: ${error.message}`);
+          return client.send(
+            createResponse(
+              'error',
+              data.requestId,
+              'An error occurred during the login process.',
+            ),
+          );
+        } finally {
+          this.pendingLogins.delete(clientId);
+        }
+        break;
+
+      case AuthorityAction.Logout:
+        if (this.pendingLogins.has(clientId)) {
+          const stationCode = this.pendingLogins.get(clientId);
+          this.logger.warn(`${clientId} logged out during login to station "${stationCode}"`);
+
+          this.stationService.cleanupPendingLogin(clientId, stationCode);
+
+          return this.pendingLogins.delete(clientId);
+        }
+
+        if (!(client as any)._station) {
           this.logger.warn(
-            `${clientId} failed to provision station "${data.stationCode}"`,
+            `${clientId} attempted to logout without being logged in`,
           );
           return client.send(
             createResponse(
               'error',
               data.requestId,
-              `Provisioning ${data.stationCode} failed.`,
+              'You are not logged into a station.',
             ),
           );
         }
 
+        this.stationService.deallocateStationFromUser(client._userId);
         this.logger.log(
-          `${clientId} logged into station "${data.stationCode}"`,
+          `${clientId} logged out of station "${(client as any)._station}"`,
         );
-        (client as any)._station = station.logonCode;
+        delete (client as any)._station;
         return client.send(
           createResponse(
             'success',
             data.requestId,
-            `Successfully provisioned ${data.stationCode} and assigned it to you.`,
+            'Successfully logged out of station.',
           ),
         );
+        break;
     }
   }
 
   handleDisconnect(client: Socket) {
+    let clientId = (client as any).id;
+
+    if (this.pendingLogins.has(clientId)) {
+      const stationCode = this.pendingLogins.get(clientId);
+      this.logger.warn(`${clientId} disconnected during login to station "${stationCode}"`);
+  
+      this.stationService.cleanupPendingLogin(clientId, stationCode).catch((err) => {
+        this.logger.error(`Failed to clean up pending login for ${clientId}: ${err.message}`);
+      });
+  
+      this.pendingLogins.delete(clientId);
+    }
+
     if ((client as any)._station) {
       this.stationService.deallocateStationFromUser((client as any)._userId);
       this.logger.log(`${client._id} deallocated from ${client._station}`);

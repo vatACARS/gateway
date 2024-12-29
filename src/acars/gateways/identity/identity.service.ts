@@ -4,7 +4,7 @@ import { Station, Prisma } from 'prisma';
 
 @Injectable()
 export class StationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   private async getStation(
     StationWhereUniqueInput: Prisma.StationWhereUniqueInput,
@@ -69,7 +69,7 @@ export class StationService {
             connect: { id: userId },
           },
         },
-      });
+      }).catch(() => {});
       await this.prisma.acarsUser.update({
         where: { id: userId },
         data: {
@@ -77,7 +77,7 @@ export class StationService {
             connect: { id: newStation.id },
           },
         },
-      });
+      }).catch(() => {});
 
       return newStation;
     }
@@ -100,5 +100,48 @@ export class StationService {
     });
     await this.deleteStation({ id: user.currPosition.id });
     return true;
+  }
+
+  public async cleanupPendingLogin(
+    userId: string,
+    stationCode: string,
+    maxRetries: number = 3,
+    delayMs: number = 500,
+  ): Promise<boolean> {
+    let attempts = 0;
+  
+    while (attempts < maxRetries) {
+      try {
+        const station = await this.prisma.station.findUnique({
+          where: { logonCode: stationCode },
+        });
+  
+        if (!station) {
+          attempts++;
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          continue;
+        }
+
+        if (station.acarsUser === userId) {
+          await this.prisma.acarsUser.update({
+            where: { id: userId },
+            data: {
+              currPosition: {
+                disconnect: true,
+              },
+            },
+          });
+        }
+  
+        // Delete the station
+        await this.deleteStation({ id: station.id });
+        return true;
+      } catch (error) {
+        attempts++;
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  
+    return false;
   }
 }
