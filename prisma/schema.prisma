@@ -71,7 +71,8 @@ model Message {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
   sender          String?
   recipient       String?
-  responseCode    String
+  responseCode    String?
+  type            String
   message         String
   received        Boolean   @default(false)
 
