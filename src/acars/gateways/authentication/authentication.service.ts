@@ -14,9 +14,16 @@ export class AuthenticationService {
     });
   }
 
-  public async authenticateUserByToken(token: string): Promise<boolean> {
+  public async authenticateUserByToken(token: string): Promise<true | string> {
     const user = await this.getAcarsUser({ apiToken: token });
-    if (!user) return false;
+    if (!user) return 'User not found';
+    if (user.isConnected) return 'User already connected';
+
+    await this.prisma.acarsUser.update({
+      where: { id: user.id },
+      data: { isConnected: true },
+    });
+
     return true;
   }
 

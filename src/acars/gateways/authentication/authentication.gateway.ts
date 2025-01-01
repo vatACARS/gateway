@@ -55,14 +55,19 @@ export class AuthenticationGateway {
             createResponse('error', data.requestId, 'Authentication failed.'),
           );
         }
-        if (
-          !(await this.authenticationService.authenticateUserByToken(
-            data.token,
-          ))
-        ) {
-          this.logger.warn(`${clientId} failed authentication: invalid token`);
+
+        const authenticated =
+          await this.authenticationService.authenticateUserByToken(data.token);
+        if (authenticated !== true) {
+          this.logger.warn(
+            `${clientId} failed authentication: ${authenticated}`,
+          );
           return client.send(
-            createResponse('error', data.requestId, 'Authentication failed.'),
+            createResponse(
+              'error',
+              data.requestId,
+              `Authentication failed: ${authenticated}`,
+            ),
           );
         }
 
