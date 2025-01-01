@@ -52,6 +52,6 @@ export class AcarsGateway
   handleDisconnect(client: Socket) {
     const clientId = (client as any)._id;
     this.logger.log(`${clientId} disconnected.`);
-    this.clientsService.removeClient(clientId);
+    this.clientsService.removeClient(client);
   }
 }
