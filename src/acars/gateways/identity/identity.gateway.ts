@@ -23,7 +23,7 @@ export class IdentityGateway implements OnGatewayDisconnect {
   private readonly logger = new Logger(IdentityGateway.name);
   private pendingLogins = new Map<string, string>();
 
-  constructor(private stationService: StationService) { }
+  constructor(private stationService: StationService) {}
 
   @SubscribeMessage(AuthorityCategory.Identity)
   async handleIdentity(
@@ -101,7 +101,9 @@ export class IdentityGateway implements OnGatewayDisconnect {
             ),
           );
         } catch (error) {
-          this.logger.error(`Error during login for ${clientId}: ${error.message}`);
+          this.logger.error(
+            `Error during login for ${clientId}: ${error.message}`,
+          );
           return client.send(
             createResponse(
               'error',
@@ -117,7 +119,9 @@ export class IdentityGateway implements OnGatewayDisconnect {
       case AuthorityAction.Logout:
         if (this.pendingLogins.has(clientId)) {
           const stationCode = this.pendingLogins.get(clientId);
-          this.logger.warn(`${clientId} logged out during login to station "${stationCode}"`);
+          this.logger.warn(
+            `${clientId} logged out during login to station "${stationCode}"`,
+          );
 
           this.stationService.cleanupPendingLogin(clientId, stationCode);
 
@@ -137,7 +141,7 @@ export class IdentityGateway implements OnGatewayDisconnect {
           );
         }
 
-        this.stationService.deallocateStationFromUser(client._userId);
+        await this.stationService.deallocateStationFromUser(client._userId);
         this.logger.log(
           `${clientId} logged out of station "${(client as any)._station}"`,
         );
@@ -154,16 +158,22 @@ export class IdentityGateway implements OnGatewayDisconnect {
   }
 
   handleDisconnect(client: Socket) {
-    let clientId = (client as any).id;
+    const clientId = (client as any).id;
 
     if (this.pendingLogins.has(clientId)) {
       const stationCode = this.pendingLogins.get(clientId);
-      this.logger.warn(`${clientId} disconnected during login to station "${stationCode}"`);
-  
-      this.stationService.cleanupPendingLogin(clientId, stationCode).catch((err) => {
-        this.logger.error(`Failed to clean up pending login for ${clientId}: ${err.message}`);
-      });
-  
+      this.logger.warn(
+        `${clientId} disconnected during login to station "${stationCode}"`,
+      );
+
+      this.stationService
+        .cleanupPendingLogin(clientId, stationCode)
+        .catch((err) => {
+          this.logger.error(
+            `Failed to clean up pending login for ${clientId}: ${err.message}`,
+          );
+        });
+
       this.pendingLogins.delete(clientId);
     }
 
