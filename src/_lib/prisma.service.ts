@@ -8,5 +8,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     await this.station.deleteMany();
     await this.message.deleteMany();
     await this.socketConnection.deleteMany();
+
+    await this.acarsUser.updateMany({
+      where: {
+        isConnected: true,
+      },
+      data: {
+        isConnected: false,
+      },
+    });
   }
 }
