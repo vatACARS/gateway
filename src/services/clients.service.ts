@@ -13,16 +13,11 @@ export class ClientsService {
   }
 
   async removeClient(client: Socket) {
-    this.clients.delete((client as any)._id);
+    this.clients.delete(client._id);
 
-    if (!(client as any)._station) return;
-    const station = await this.prisma.station.findUnique({
-      where: { logonCode: (client as any)._station },
-    });
-
-    if (station) {
-      this.prisma.acarsUser.update({
-        where: { id: station.acarsUser },
+    if (client._userId) {
+      await this.prisma.acarsUser.update({
+        where: { id: client._userId },
         data: { isConnected: false },
       });
     }
