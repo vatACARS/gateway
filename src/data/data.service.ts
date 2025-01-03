@@ -4,6 +4,7 @@ import { PrismaService } from '../_lib/prisma.service';
 
 @Injectable()
 export class DataService {
+  private connectedData: any = {};
   private networkData: any = {};
   private messageData: any = {};
   private stationData: any = {};
@@ -32,6 +33,9 @@ export class DataService {
 
   @Cron(CronExpression.EVERY_10_SECONDS)
   async fetchACARSData() {
+    this.connectedData = await this.prisma.acarsUser.findMany({
+      where: { isConnected: true },
+    });
     this.messageData = await this.prisma.message.findMany();
     this.stationData = await this.prisma.station.findMany();
   }
@@ -46,6 +50,8 @@ export class DataService {
       },
     });
   }
+
+  getConnectedData = () => this.connectedData.length;
 
   getNetworkData = () => this.networkData;
 

@@ -11,6 +11,11 @@ export class DataController {
     return this.dataService.getNetworkData();
   }
 
+  @Get('/data/connected')
+  getConnectedData(): number {
+    return this.dataService.getConnectedData();
+  }
+
   @Get('/data/stations')
   getStationData(): object {
     return this.dataService.getStationData();
