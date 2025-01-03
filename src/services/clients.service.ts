@@ -23,7 +23,7 @@ export class ClientsService {
     }
   }
 
-  getClient(clientId: string): Socket | undefined {
+  getClientByClientId(clientId: string): Socket | undefined {
     return this.clients.get(clientId);
   }
 
