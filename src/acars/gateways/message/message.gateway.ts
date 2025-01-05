@@ -11,7 +11,7 @@ import {
 } from './message.enums';
 import { MessageService } from './message.service';
 import { createResponse } from '../../../_lib/apiResponse';
-import { PrismaService } from '../../../_lib/prisma.service';
+import { PrismaService } from '../../../services/prisma.service';
 
 @WebSocketGateway({
   path: '/gateway',

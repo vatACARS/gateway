@@ -5,8 +5,8 @@ import { AcarsGateway } from './acars/acars.gateway';
 import { DataModule } from './data/data.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
-import { PrismaService } from './_lib/prisma.service';
-import { AgendaService } from './_lib/agenda.service';
+import { PrismaService } from './services/prisma.service';
+import { AgendaService } from './services/agenda.service';
 
 import {
   AuthenticationGateway,

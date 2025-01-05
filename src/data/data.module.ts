@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { DataController } from './data.controller';
 import { DataService } from './data.service';
-import { PrismaService } from 'src/_lib/prisma.service';
+import { PrismaService } from 'src/services/prisma.service';
 
 @Module({
   imports: [],

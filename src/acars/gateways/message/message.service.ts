@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/_lib/prisma.service';
+import { PrismaService } from 'src/services/prisma.service';
 import { ClientsService } from 'src/services/clients.service';
 import { createResponse } from 'src/_lib/apiResponse';
 import { v4 as uuidv4 } from 'uuid';
