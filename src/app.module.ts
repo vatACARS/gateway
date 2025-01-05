@@ -17,6 +17,7 @@ import {
   MessageService,
 } from './acars/gateways';
 import { ClientsService } from './services/clients.service';
+import { HoppiesService } from './services/hoppies.service';
 
 @Module({
   imports: [ScheduleModule.forRoot(), DataModule],
@@ -26,6 +27,7 @@ import { ClientsService } from './services/clients.service';
     PrismaService,
     AgendaService,
     ClientsService,
+    HoppiesService,
 
     AcarsGateway,
 

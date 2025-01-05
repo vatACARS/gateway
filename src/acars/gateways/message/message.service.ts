@@ -17,6 +17,7 @@ export class MessageService {
     recipient: string,
     message: string,
     responseCode: string,
+    replyToId: number | null,
   ) {
     if (!sender || !recipient || !message || !responseCode)
       return { success: false, message: 'Missing required fields' };
@@ -88,6 +89,7 @@ export class MessageService {
           cpdlc: {
             sender: senderStation.logonCode,
             responseCode,
+            replyToId,
             message,
           },
         }),
