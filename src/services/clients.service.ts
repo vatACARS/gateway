@@ -8,12 +8,12 @@ export class ClientsService {
 
   constructor(private prisma: PrismaService) {}
 
-  addClient(clientId: string, client: Socket) {
-    this.clients.set(clientId, client);
+  addClient(socketId: string, client: Socket) {
+    this.clients.set(socketId, client);
   }
 
   async removeClient(client: Socket) {
-    this.clients.delete(client._id);
+    this.clients.delete(client._socketId);
 
     if (client._userId) {
       await this.prisma.acarsUser.update({
@@ -33,7 +33,7 @@ export class ClientsService {
 
   getClientByStationCode(stationCode: string): Socket | undefined {
     for (const client of this.clients.values()) {
-      if ((client as any)._station === stationCode) {
+      if (client._station === stationCode) {
         return client;
       }
     }
