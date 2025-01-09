@@ -21,129 +21,151 @@ export class MessageService {
   ) {
     if (!sender || !recipient || !message || !responseCode)
       return { success: false, message: 'Missing required fields' };
-    const senderStation = await this.prisma.station.findUnique({
-      where: { acarsUser: sender },
-    });
-    if (!senderStation) return { success: false, message: 'Invalid sender' };
 
-    let receiverStation = await this.prisma.station.findUnique({
-      where: { logonCode: recipient },
-    });
-    if (!receiverStation) {
-      receiverStation = await this.prisma.station.create({
+    try {
+      const senderStation = await this.validateSender(sender);
+      const receiverStation = await this.findReceiver(recipient);
+
+      await this.prisma.message.create({
         data: {
-          logonCode: recipient,
+          senderUser: {
+            connect: { id: senderStation.id },
+          },
+          receipientUser: receiverStation
+            ? { connect: { id: receiverStation.id } }
+            : undefined,
+          message,
+          responseCode,
+          type: 'cpdlc',
         },
       });
-    }
 
-    await this.prisma.message.create({
-      data: {
-        senderUser: {
-          connect: { id: senderStation.id },
-        },
-        receipientUser: {
-          connect: { id: receiverStation.id },
-        },
-        message,
-        responseCode,
-        type: 'cpdlc',
-      },
-    });
+      const user = await this.prisma.acarsUser.findUnique({
+        where: { id: senderStation.acarsUser },
+        include: { oauthAccounts: true },
+      });
 
-    const user = await this.prisma.acarsUser.findUnique({
-      where: { id: senderStation.acarsUser },
-      include: { oauthAccounts: true },
-    });
-    const hoppiesToken = user.oauthAccounts.find(
-      (o) => o.provider === 'hoppies',
-    )?.accessToken;
+      const hoppiesToken = user.oauthAccounts.find(o => o.provider === 'hoppies')?.accessToken;
 
-    if (hoppiesToken) {
-      const data = await fetch(
-        'http://www.hoppie.nl/acars/system/connect.html',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+      if(hoppiesToken) {
+        const data = await fetch(
+          'http://www.hoppie.nl/acars/system/connect.html',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              logon: hoppiesToken,
+              from: senderStation.logonCode,
+              to: recipient,
+              type: 'CPDLC',
+              packet: '/data2/1/1/N/TEST',
+            }),
           },
-          body: new URLSearchParams({
-            logon: hoppiesToken,
-            from: senderStation.logonCode,
-            to: recipient,
-            type: 'CPDLC',
-            packet: '/data2/1/1/N/TEST',
-          }),
+        );
+      }
+
+      await this.sendToRecipientSocket(recipient, AuthorityCategory.CPDLC, AuthorityAction.ReceiveCPDLCMessage, {
+        cpdlc: {
+          sender: senderStation.logonCode,
+          responseCode,
+          replyToId,
+          message,
         },
-      );
-      console.log(await data.text());
+      });
+
+      return { success: true, message: 'Message sent' };
+    } catch(err) {
+      return { success: false, message: err.message };
     }
-
-    const recipientSocket =
-      this.clientsService.getClientByStationCode(recipient);
-    if (recipientSocket)
-      recipientSocket.send(
-        createResponse('success', uuidv4().split('-')[0], '', {
-          gateway: AuthorityCategory.CPDLC,
-          action: AuthorityAction.ReceiveCPDLCMessage,
-          cpdlc: {
-            sender: senderStation.logonCode,
-            responseCode,
-            replyToId,
-            message,
-          },
-        }),
-      );
-
-    return { success: true, message: 'Message sent' };
   }
 
   async sendTelexMessage(sender: string, recipient: string, message: string) {
     if (!sender || !recipient || !message)
       return { success: false, message: 'Missing required fields' };
-    const senderStation = await this.prisma.station.findUnique({
-      where: { acarsUser: sender },
-    });
-    if (!senderStation) return { success: false, message: 'Invalid sender' };
 
-    let receiverStation = await this.prisma.station.findUnique({
-      where: { logonCode: recipient },
-    });
-    if (!receiverStation) {
-      receiverStation = await this.prisma.station.create({
+    try {
+      const senderStation = await this.validateSender(sender);
+      const receiverStation = await this.findReceiver(recipient);
+
+      await this.prisma.message.create({
         data: {
-          logonCode: recipient,
+          senderUser: {
+            connect: { id: senderStation.id },
+          },
+          receipientUser: receiverStation
+            ? { connect: { id: receiverStation.id } }
+            : undefined,
+          message,
+          type: 'telex',
         },
       });
-    }
 
-    await this.prisma.message.create({
-      data: {
-        senderUser: {
-          connect: { id: senderStation.id },
-        },
-        receipientUser: {
-          connect: { id: receiverStation.id },
-        },
-        message,
-        type: 'telex',
-      },
-    });
+      const user = await this.prisma.acarsUser.findUnique({
+        where: { id: senderStation.acarsUser },
+        include: { oauthAccounts: true },
+      });
 
-    const recipientSocket =
-      this.clientsService.getClientByStationCode(recipient);
-    if (recipientSocket)
-      recipientSocket.send(
-        createResponse('success', uuidv4().split('-')[0], '', {
-          gateway: AuthorityCategory.Telex,
-          action: AuthorityAction.ReceiveTelexMessage,
-          telex: {
-            sender: senderStation.logonCode,
-            message,
+      const hoppiesToken = user.oauthAccounts.find(o => o.provider === 'hoppies')?.accessToken;
+
+      if(hoppiesToken) {
+        const data = await fetch(
+          'http://www.hoppie.nl/acars/system/connect.html',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              logon: hoppiesToken,
+              from: senderStation.logonCode,
+              to: recipient,
+              type: 'telex',
+              packet: message,
+            }),
           },
-        }),
-      );
+        );
+      }
 
-    return { success: true, message: 'Message sent' };
+      await this.sendToRecipientSocket(recipient, AuthorityCategory.Telex, AuthorityAction.ReceiveTelexMessage, {
+        telex: {
+          sender: senderStation.logonCode,
+          message,
+        },
+      });
+
+      return { success: true, message: 'Message sent' };
+    } catch(err) {
+      return { success: true, message: err.message };
+    }
+  }
+
+  private async validateSender(sender: string) {
+    const senderStation = await this.prisma.station.findUnique({
+      where: { acarsUser: sender }
+    });
+    if(!senderStation) throw new Error("Invalid sender");
+    return senderStation;
+  }
+
+  private async findReceiver(recipient: string) {
+    return await this.prisma.station.findUnique({
+      where: { logonCode: recipient },
+    });
+  }
+
+  private async sendToRecipientSocket(
+    recipient: string,
+    gateway: AuthorityCategory,
+    action: AuthorityAction,
+    payload: Record<string, any>,
+  ) {
+    const recipientSocket = this.clientsService.getClientByStationCode(recipient);
+    if(!recipientSocket) return;
+
+    recipientSocket.send(
+      createResponse('success', 'gateway', '', {
+        gateway,
+        action,
+        ...payload
+      }),
+    );
   }
 }
