@@ -9,7 +9,6 @@ import {
 import { Server, Socket } from 'ws';
 import { v4 as uuidv4 } from 'uuid';
 
-import { AuthenticationGateway, IdentityGateway } from './gateways';
 import { ClientsService } from 'src/services/clients.service';
 
 @WebSocketGateway({
@@ -20,38 +19,38 @@ export class AcarsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger(AcarsGateway.name);
+  private authenticationTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   @WebSocketServer()
   server: Server;
 
-  constructor(
-    private readonly authenticationGateway: AuthenticationGateway,
-    private readonly stationGateway: IdentityGateway,
-    private clientsService: ClientsService,
-  ) {}
+  constructor(private clientsService: ClientsService) {}
 
   afterInit() {
     this.logger.log('Gateway is online.');
   }
 
   async handleConnection(client: Socket) {
-    const clientId = uuidv4().split('-')[0];
-    (client as any)._id = clientId;
-    this.logger.log(`${clientId} connected.`);
+    const socketId = uuidv4().split('-')[0];
+    client._socketId = socketId;
+    this.logger.log(`${socketId} connected.`);
 
-    setTimeout(() => {
-      if (!(client as any)._authenticated) {
-        this.logger.warn(`${clientId} failed to authenticate in time.`);
+    const authTimeout = setTimeout(() => {
+      if (!client._authenticated) {
+        this.logger.warn(`${socketId} failed to authenticate in time.`);
         client.terminate();
       }
     }, 5000);
 
-    this.clientsService.addClient(clientId, client);
+    this.clientsService.addClient(socketId, client);
+    this.authenticationTimeouts.set(socketId, authTimeout);
   }
 
   handleDisconnect(client: Socket) {
-    const clientId = (client as any)._id;
-    this.logger.log(`${clientId} disconnected.`);
+    const socketId = client._socketId;
+    const authTimeout = this.authenticationTimeouts.get(socketId);
+    if (authTimeout) clearTimeout(authTimeout);
     this.clientsService.removeClient(client);
+    this.logger.log(`${socketId} disconnected.`);
   }
 }
