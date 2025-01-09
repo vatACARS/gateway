@@ -35,6 +35,7 @@ export class IdentityGateway implements OnGatewayDisconnect {
     },
   ) {
     const clientId = this.getClientId(client);
+
     if (!data.requestId)
       return this.sendError(client, 'Missing requestId.', 'gateway');
     if (!data.action)
@@ -99,7 +100,7 @@ export class IdentityGateway implements OnGatewayDisconnect {
           `Failed to provision ${data.stationCode} for ${clientId}`,
         );
 
-      this.logger.log(`${clientId} provisioned ${data.stationCode}`);
+      this.logger.log(`${clientId}/${data.stationCode} provisioned.`);
       client._stationCode = station.logonCode;
 
       this.sendSuccess(
@@ -154,7 +155,7 @@ export class IdentityGateway implements OnGatewayDisconnect {
     const clientId = this.getClientId(client);
 
     try {
-      await this.stationService.deallocateStationFromUser(client);
+      await this.stationService.deallocateStationFromUser(client._userId);
       this.logger.log(`${clientId}/${client._stationCode} deallocated.`);
       delete client._stationCode;
     } catch (err) {
