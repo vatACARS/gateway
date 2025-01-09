@@ -27,23 +27,6 @@ export class MessageGateway {
     private prisma: PrismaService,
   ) {}
 
-  onModuleInit() {
-    /*this.prisma.$use(async (params, next) => {
-      if(params.model === "Message") {
-        if(params.action === "create") {
-          
-        }
-      }
-    });*/
-  }
-
-  @SubscribeMessage(AuthorityCategory.Station)
-  async handleMessage_Station /*client: Socket,
-    data: {
-      action: AuthorityAction;
-      [key: string]: any;
-    },*/() {}
-
   @SubscribeMessage(AuthorityCategory.CPDLC)
   async handleMessage_CPDLC(
     client: Socket,
@@ -54,75 +37,13 @@ export class MessageGateway {
       message: string;
       responseCode: ResponseCode;
     },
-  ) {
-    const clientId = (client as any)._id;
-
-    if (!data.requestId) {
-      this.logger.warn(`${clientId} sent a request with no requestId`);
-      return client.send(
-        createResponse('error', 'gateway', 'Missing requestId.'),
-      );
-    }
-
-    if (!data.action) {
-      this.logger.warn(`${clientId} sent a request with no AuthorityAction`);
-      return client.send(
-        createResponse('error', data.requestId, 'Missing GatewayAction.'),
-      );
-    }
-
-    this.logger.log(`${clientId} actioned ${AuthorityAction[data.action]}`);
-
-    switch (data.action) {
-      case AuthorityAction.SendCPDLCMessage:
-        if (!data.recipient) {
-          this.logger.warn(
-            `${clientId} failed to send CPDLC message: missing recipient`,
-          );
-          return client.send(
-            createResponse('error', data.requestId, 'Missing recipient.'),
-          );
-        }
-
-        if (!data.message) {
-          this.logger.warn(
-            `${clientId} failed to send CPDLC message: missing message`,
-          );
-          return client.send(
-            createResponse('error', data.requestId, 'Missing message.'),
-          );
-        }
-
-        if (!data.responseCode) data.responseCode = ResponseCode.None;
-
-        this.logger.log(
-          `${clientId} ${client._station} --CPDLC-> ${data.recipient}\n${data.message}`,
-        );
-
-        const responseCpdlc: any /* TODO: DEFINE */ =
-          await this.messageService.sendCPDLCMessage(
-            client._userId,
-            data.recipient,
-            data.message,
-            data.responseCode,
-          );
-
-        if (!responseCpdlc.success) {
-          return client.send(
-            createResponse('error', data.requestId, responseCpdlc.message),
-          );
-        }
-
-        return client.send(
-          createResponse('success', data.requestId, responseCpdlc),
-        );
-
-      default:
-        this.logger.warn(`${clientId} sent an unknown action`);
-        return client.send(
-          createResponse('error', data.requestId, 'Unknown action.'),
-        );
-    }
+  ): Promise<void> {
+    await this.handleMessage(
+      client,
+      data,
+      this.messageService.sendCPDLCMessage.bind(this.messageService),
+      'CPDLC',
+    );
   }
 
   @SubscribeMessage(AuthorityCategory.Telex)
@@ -134,78 +55,79 @@ export class MessageGateway {
       recipient: string;
       message: string;
     },
-  ) {
-    const clientId = (client as any)._id;
-
-    if (!data.requestId) {
-      this.logger.warn(`${clientId} sent a request with no requestId`);
-      return client.send(
-        createResponse('error', 'gateway', 'Missing requestId.'),
-      );
-    }
-
-    if (!data.action) {
-      this.logger.warn(`${clientId} sent a request with no AuthorityAction`);
-      return client.send(
-        createResponse('error', data.requestId, 'Missing GatewayAction.'),
-      );
-    }
-
-    this.logger.log(`${clientId} actioned ${AuthorityAction[data.action]}`);
-
-    switch (data.action) {
-      case AuthorityAction.SendTelexMessage:
-        if (!data.recipient) {
-          this.logger.warn(
-            `${clientId} failed to send Telex message: missing recipient`,
-          );
-          return client.send(
-            createResponse('error', data.requestId, 'Missing recipient.'),
-          );
-        }
-
-        if (!data.message) {
-          this.logger.warn(
-            `${clientId} failed to send Telex message: missing message`,
-          );
-          return client.send(
-            createResponse('error', data.requestId, 'Missing message.'),
-          );
-        }
-
-        this.logger.log(
-          `${clientId} ${client._station} --TELEX-> ${data.recipient}\n${data.message}`,
-        );
-
-        const responseTelex: any /* TODO: DEFINE */ =
-          await this.messageService.sendTelexMessage(
-            client._userId,
-            data.recipient,
-            data.message,
-          );
-
-        if (!responseTelex.success) {
-          return client.send(
-            createResponse('error', data.requestId, responseTelex.message),
-          );
-        }
-
-        return client.send(
-          createResponse('success', data.requestId, responseTelex),
-        );
-
-      default:
-        this.logger.warn(`${clientId} sent an unknown action`);
-        return client.send(
-          createResponse('error', data.requestId, 'Unknown action.'),
-        );
-    }
+  ): Promise<void> {
+    await this.handleMessage(
+      client,
+      data,
+      this.messageService.sendTelexMessage.bind(this.messageService),
+      'TELEX',
+    );
   }
 
+  @SubscribeMessage(AuthorityCategory.Station)
+  async handleMessage_Station(): Promise<void> {}
+
   @SubscribeMessage(AuthorityCategory.Administrative)
-  async handleMessage_Administrative /*client: Socket,
+  async handleMessage_Administrative(): Promise<void> {}
+
+  private async handleMessage(
+    client: Socket,
     data: {
       action: AuthorityAction;
-      [key: string]: any;
-    },*/() {}
+      requestId: string;
+      recipient?: string;
+      message?: string;
+      responseCode?: ResponseCode;
+    },
+    handler: (
+      userId: string,
+      recipient: string,
+      message: string,
+      responseCode?: ResponseCode,
+    ) => Promise<{ success: boolean; message: string | any }>,
+    logPrefix: string,
+  ): Promise<void> {
+    const clientId = this.getClientId(client);
+
+    if (!data.requestId)
+      return this.sendError(client, `Missing requestId.`, 'gateway');
+    if (!data.action)
+      return this.sendError(client, 'Missing AuthorityAction.', data.requestId);
+
+    this.logger.log(`${clientId}/${AuthorityAction[data.action]}`);
+
+    if (!data.recipient)
+      return this.sendError(client, 'Missing recipient.', data.recipient);
+    if (!data.message)
+      return this.sendError(client, 'Missing message.', data.requestId);
+
+    data.responseCode = data.responseCode || ResponseCode.None;
+
+    this.logger.log(
+      `${clientId}/${client._stationCode} --${logPrefix}--> ${data.recipient}: ${data.message.replaceAll('\n', '#')}`,
+    );
+
+    const response = await handler(
+      client._userId,
+      data.recipient,
+      data.message,
+      data.responseCode,
+    );
+
+    if (!response.success)
+      return this.sendError(client, response.message, data.requestId);
+    return this.sendSuccess(client, response.message, data.requestId);
+  }
+
+  private sendError(client: Socket, message: string, requestId: string) {
+    client.send(createResponse('error', requestId, message));
+  }
+
+  private sendSuccess(client: Socket, message: string, requestId: string) {
+    client.send(createResponse('success', requestId, message));
+  }
+
+  private getClientId(client: Socket): string {
+    return client._socketId || 'unknown-client';
+  }
 }
