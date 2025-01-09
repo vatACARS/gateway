@@ -9,7 +9,7 @@ export class MessageService {
   constructor(
     private prisma: PrismaService,
     private clientsService: ClientsService,
-  ) {}
+  ) { }
 
   async sendCPDLCMessage(
     sender: string,
@@ -122,8 +122,8 @@ export class MessageService {
         (o) => o.provider === 'hoppies',
       )?.accessToken;
 
-      if (hoppiesToken) {
-        const data = await fetch(
+      if (hoppiesToken)
+        await fetch(
           'http://www.hoppie.nl/acars/system/connect.html',
           {
             method: 'POST',
@@ -137,7 +137,6 @@ export class MessageService {
             }),
           },
         );
-      }
 
       await this.sendToRecipientSocket(
         recipient,
