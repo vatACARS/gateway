@@ -26,82 +26,85 @@ export class AuthenticationGateway {
     data: {
       action: AuthorityAction;
       requestId: string;
+      token?: string;
       [key: string]: any;
     },
   ) {
-    const clientId = (client as any)._id;
+    const clientId = this.getClientId(client);
 
-    if (!data.requestId) {
-      this.logger.warn(`${clientId} sent a request with no requestId.`);
-      return client.send(
-        createResponse('error', 'gateway', 'Missing requestId.'),
-      );
-    }
+    if (!data.requestId)
+      return this.sendError(client, `Missing requestId.`, 'gateway');
+    if (!data.action)
+      return this.sendError(client, 'Missing AuthorityAction.', data.requestId);
 
-    if (!data.action) {
-      this.logger.warn(`${clientId} sent a request with no AuthorityAction.`);
-      return client.send(
-        createResponse('error', data.requestId, 'Missing GatewayAction.'),
-      );
-    }
-
-    this.logger.log(`${clientId} actioned ${AuthorityAction[data.action]}`);
+    this.logger.log(`${clientId}/${AuthorityAction[data.action]}`);
 
     switch (data.action) {
       case AuthorityAction.Authenticate:
-        if (!data.token) {
-          this.logger.warn(`${clientId} failed authentication: missing token`);
-          return client.send(
-            createResponse('error', data.requestId, 'Authentication failed.'),
-          );
-        }
-
-        const authenticated =
-          await this.authenticationService.authenticateUserByToken(data.token);
-        if (authenticated !== true) {
-          this.logger.warn(
-            `${clientId} failed authentication: ${authenticated}`,
-          );
-          return client.send(
-            createResponse(
-              'error',
-              data.requestId,
-              `Authentication failed: ${authenticated}`,
-            ),
-          );
-        }
-
-        const user = await this.authenticationService.getAcarsUserByToken(
-          data.token,
-        );
-        (client as any)._authenticated = true;
-        (client as any)._token = data.token;
-        (client as any)._userId = user.id;
-        (client as any)._id = user.username;
-
-        this.clientsService.removeClient(clientId);
-        this.clientsService.addClient(clientId, client);
-
-        this.logger.log(
-          `${clientId} authenticated successfully as ${(client as any)._id} (${(client as any)._userId})`,
-        );
-        client.send(
-          createResponse('success', data.requestId, 'Logged in successfully.'),
-        );
+        await this.authenticateClient(client, data, clientId);
         break;
 
       default:
-        this.logger.warn(
-          `${clientId} sent unknown AuthorityAction: ${data.action}`,
-        );
-        client.send(
-          createResponse(
-            'error',
-            data.requestId,
-            `Unknown GatewayAction: '${data.action}'`,
-          ),
-        );
+        this.sendError(client, 'Invalid action.', data.requestId);
         break;
     }
+  }
+
+  private async authenticateClient(
+    client: Socket,
+    data: {
+      requestId: string;
+      token?: string;
+    },
+    clientId: string,
+  ): Promise<void> {
+    if (!data.token)
+      return this.sendError(client, 'Authentication failed.', data.requestId);
+
+    const authResult = await this.authenticationService.authenticateUserByToken(
+      data.token,
+    );
+    if (!authResult)
+      return this.sendError(
+        client,
+        `Authentication failed: ${authResult}`,
+        data.requestId,
+      );
+
+    const user = await this.authenticationService.getAcarsUserByToken(
+      data.token,
+    );
+    this.updateClientState(client, clientId, data.token, user);
+    this.sendSuccess(client, 'Logged in successfully.', data.requestId);
+  }
+
+  private updateClientState(
+    client: Socket,
+    clientId: string,
+    token: string,
+    user: {
+      id: string;
+      username: string;
+    },
+  ): void {
+    client._authenticated = true;
+    client._token = token;
+    client._userId = user.id;
+    client._username = user.username;
+
+    this.clientsService.removeClient(clientId);
+    this.clientsService.addClient(clientId, client);
+  }
+
+  private sendError(client: Socket, message: string, requestId: string) {
+    client.send(createResponse('error', requestId, message));
+  }
+
+  private sendSuccess(client: Socket, message: string, requestId: string) {
+    client.send(createResponse('success', requestId, message));
+  }
+
+  private getClientId(client: Socket): string {
+    return client._socketId || 'unknown-client';
   }
 }
