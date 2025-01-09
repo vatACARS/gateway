@@ -7,10 +7,10 @@ export class StationService {
   constructor(private prisma: PrismaService) {}
 
   private async getStation(
-    StationWhereUniqueInput: Prisma.StationWhereUniqueInput,
+    where: Prisma.StationWhereUniqueInput,
   ): Promise<Station | null> {
     return this.prisma.station.findUnique({
-      where: StationWhereUniqueInput,
+      where: where,
     });
   }
 
@@ -32,19 +32,20 @@ export class StationService {
   }
 
   private async deleteStation(
-    StationWhereUniqueInput: Prisma.StationWhereUniqueInput,
-  ): Promise<Station> {
-    return this.prisma.station.delete({ where: StationWhereUniqueInput });
+    where: Prisma.StationWhereUniqueInput,
+  ): Promise<void> {
+    await this.prisma.station.delete({ where: where });
   }
 
   // Public functions
-  public getStationByCode = async (code: string): Promise<Station | null> =>
+  public getStationByCode = (code: string): Promise<Station | null> =>
     this.getStation({ logonCode: code });
 
   public deleteStationByCode = async (code: string): Promise<boolean> => {
     const station = await this.getStation({ logonCode: code });
     if (!station) return false;
-    this.deleteStation({ where: { logonCode: code } });
+    await this.deleteStation({ where: { logonCode: code } });
+    return true;
   };
 
   public async createStationAndAssignUser(
@@ -52,39 +53,22 @@ export class StationService {
     stationData: Prisma.StationCreateInput,
     userId: string,
   ): Promise<Station | null> {
-    const existingStation = await this.prisma.station.findUnique({
-      where: { logonCode },
-    });
-    if (existingStation) {
-      if (existingStation.acarsUser) return null;
-    } else {
-      const newStation = await this.createStation({
-        logonCode,
-        ...stationData,
-      });
-      await this.prisma.station
-        .update({
-          where: { id: newStation.id },
-          data: {
-            user: {
-              connect: { id: userId },
-            },
-          },
-        })
-        .catch(() => {});
-      await this.prisma.acarsUser
-        .update({
-          where: { id: userId },
-          data: {
-            currPosition: {
-              connect: { id: newStation.id },
-            },
-          },
-        })
-        .catch(() => {});
+    return this.prisma.$transaction(async (prisma) => {
+      const existingStation = await this.getStationByCode(logonCode);
 
-      return newStation;
-    }
+      if (existingStation) {
+        if (existingStation.acarsUser) return null;
+      } else {
+        const newStation = await this.createStation({
+          logonCode,
+          ...stationData,
+        });
+
+        await this.updateStationAssignment(prisma, newStation.id, userId);
+
+        return newStation;
+      }
+    });
   }
 
   public async deallocateStationFromUser(userId: string): Promise<boolean> {
@@ -92,8 +76,10 @@ export class StationService {
       where: { id: userId },
       include: { currPosition: true },
     });
-    if (!user) return false;
-    if (!user.currPosition) return false;
+
+    if (!user || !user.currPosition) return false;
+    const stationId = user.currPosition.id;
+
     await this.prisma.acarsUser.update({
       where: { id: userId },
       data: {
@@ -102,50 +88,61 @@ export class StationService {
         },
       },
     });
-    await this.deleteStation({ id: user.currPosition.id });
+
+    await this.deleteStation({ id: stationId });
     return true;
   }
 
   public async cleanupPendingLogin(
     userId: string,
     stationCode: string,
-    maxRetries: number = 3,
-    delayMs: number = 500,
+    delayMs = 2000,
   ): Promise<boolean> {
-    let attempts = 0;
+    await new Promise((res) => setTimeout(res, delayMs));
 
-    while (attempts < maxRetries) {
-      try {
-        const station = await this.prisma.station.findUnique({
-          where: { logonCode: stationCode },
-        });
+    const station = await this.getStationByCode(stationCode);
 
-        if (!station) {
-          attempts++;
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
-          continue;
-        }
+    if (!station) return false;
+    if (station.acarsUser !== userId) return false;
 
-        if (station.acarsUser === userId) {
-          await this.prisma.acarsUser.update({
-            where: { id: userId },
-            data: {
-              currPosition: {
-                disconnect: true,
-              },
-            },
-          });
-        }
+    try {
+      await this.prisma.acarsUser.update({
+        where: { id: userId },
+        data: {
+          currPosition: {
+            disconnect: true,
+          },
+        },
+      });
 
-        // Delete the station
-        await this.deleteStation({ id: station.id });
-        return true;
-      } catch (error) {
-        attempts++;
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
+      await this.deleteStation({ logonCode: stationCode });
+      return true;
+    } catch (err) {
+      return false;
     }
+  }
 
-    return false;
+  private async updateStationAssignment(
+    prisma: Prisma.TransactionClient,
+    stationId: string,
+    userId: string,
+  ): Promise<void> {
+    await prisma.station.update({
+      where: { id: stationId },
+      data: {
+        user: {
+          connect: { id: userId },
+        },
+      },
+    });
+
+    await prisma.acarsUser.update({
+      where: { id: userId },
+      data: {
+        currPosition: {
+          connect: { id: stationId },
+        },
+      },
+    });
   }
 }
