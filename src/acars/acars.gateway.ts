@@ -40,6 +40,7 @@ export class AcarsGateway
         this.logger.warn(`${socketId} failed to authenticate in time.`);
         client.terminate();
       }
+      this.authenticationTimeouts.delete(socketId);
     }, 5000);
 
     this.clientsService.addClient(socketId, client);
