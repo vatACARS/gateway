@@ -33,7 +33,7 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async fetchConnectedUsers() {
-    return this.prisma.acarsUser.findMany({
+    const users = await this.prisma.acarsUser.findMany({
       where: {
         isConnected: true,
         currPosition: { isNot: null },
@@ -45,6 +45,10 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
         currPosition: true,
       },
     });
+
+    return users.filter((u) =>
+      u.oauthAccounts.find((o) => o.provider === 'hoppies'),
+    );
   }
 
   private async parseResponse(response: string) {
