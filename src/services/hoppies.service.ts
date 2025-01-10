@@ -133,8 +133,9 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
                   ? null
                   : {
                       sender: message.identifier,
-                      responseCode: cpdlcContent.responseCode,
+                      messageId: cpdlcContent.messageId,
                       replyToId: cpdlcContent.replyToId,
+                      responseCode: cpdlcContent.responseCode,
                       message: cpdlcContent.content,
                     },
               telex:
