@@ -108,6 +108,20 @@ export class IdentityGateway implements OnGatewayDisconnect {
         `Provisioned ${data.stationCode} to you.`,
         data.requestId,
       );
+
+      client.send(
+        createResponse('success', 'gateway', '', {
+          gateway: 5,
+          action: 41,
+          cpdlc: {
+            sender: 'SERVER',
+            messageId: 1,
+            replyToId: null,
+            responseCode: 'N',
+            message: `WELCOME TO VATACARS`,
+          },
+        }),
+      );
     } catch (err) {
       this.logger.error(`${clientId}/${data.stationCode}: ${err.message}`);
       this.sendError(client, 'Provisioning station failed.', data.requestId);
