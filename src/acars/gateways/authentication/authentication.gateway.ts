@@ -75,6 +75,7 @@ export class AuthenticationGateway {
       data.token,
     );
     this.updateClientState(client, clientId, data.token, user);
+    this.logger.log(`${clientId} is ${user.username}`);
     this.sendSuccess(client, 'Logged in successfully.', data.requestId);
   }
 
