@@ -11,7 +11,6 @@ import {
 } from './message.enums';
 import { MessageService } from './message.service';
 import { createResponse } from '../../../_lib/apiResponse';
-import { PrismaService } from '../../../services/prisma.service';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -22,10 +21,7 @@ import { PrismaService } from '../../../services/prisma.service';
 export class MessageGateway {
   private readonly logger = new Logger(MessageGateway.name);
 
-  constructor(
-    private messageService: MessageService,
-    private prisma: PrismaService,
-  ) {}
+  constructor(private messageService: MessageService) {}
 
   @SubscribeMessage(AuthorityCategory.CPDLC)
   async handleMessage_CPDLC(

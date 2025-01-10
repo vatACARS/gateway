@@ -9,7 +9,7 @@ export class MessageService {
   constructor(
     private prisma: PrismaService,
     private clientsService: ClientsService,
-  ) { }
+  ) {}
 
   async sendCPDLCMessage(
     sender: string,
@@ -123,20 +123,17 @@ export class MessageService {
       )?.accessToken;
 
       if (hoppiesToken)
-        await fetch(
-          'http://www.hoppie.nl/acars/system/connect.html',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              logon: hoppiesToken,
-              from: senderStation.logonCode,
-              to: recipient,
-              type: 'telex',
-              packet: message,
-            }),
-          },
-        );
+        await fetch('http://www.hoppie.nl/acars/system/connect.html', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            logon: hoppiesToken,
+            from: senderStation.logonCode,
+            to: recipient,
+            type: 'telex',
+            packet: message,
+          }),
+        });
 
       await this.sendToRecipientSocket(
         recipient,
