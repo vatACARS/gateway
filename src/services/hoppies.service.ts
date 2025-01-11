@@ -198,9 +198,6 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
 
   private async startPolling() {
     const connectedUsers = await this.fetchConnectedUsers();
-    this.logger.log(
-      `Starting polling loop with ${connectedUsers.length} connected users.`,
-    );
 
     connectedUsers.forEach((user) => {
       const hoppies = user.oauthAccounts[0];
