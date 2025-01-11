@@ -12,6 +12,7 @@ import { AuthorityCategory, AuthorityAction } from './identity.enums';
 import { StationService } from './identity.service';
 
 import { createResponse } from '../../../_lib/apiResponse';
+import { ClientsService } from 'src/services/clients.service';
 
 @WebSocketGateway({
   path: '/gateway',
@@ -23,7 +24,10 @@ export class IdentityGateway implements OnGatewayDisconnect {
   private readonly logger = new Logger(IdentityGateway.name);
   private pendingLogins = new Map<string, string>();
 
-  constructor(private readonly stationService: StationService) {}
+  constructor(
+    private readonly stationService: StationService,
+    private readonly clientsService: ClientsService,
+  ) {}
 
   @SubscribeMessage(AuthorityCategory.Identity)
   async handleIdentity(
@@ -102,6 +106,9 @@ export class IdentityGateway implements OnGatewayDisconnect {
 
       this.logger.log(`${clientId}/${data.stationCode} provisioned.`);
       client._stationCode = station.logonCode;
+
+      this.clientsService.removeClient(clientId);
+      this.clientsService.addClient(clientId, client);
 
       this.sendSuccess(
         client,
