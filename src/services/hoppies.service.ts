@@ -63,7 +63,10 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
       const parts = block.split(' ');
       const identifier = parts[0]; // e.g., "JST460"
       const messageType = parts[1]; // e.g., "telex"
-      const message = parts.slice(2).join(' '); // Rest of the message
+      const message = parts
+        .slice(2)
+        .join(' ')
+        .replace(/^\{|\}$/g, ''); // Rest of the message
       return { identifier, messageType, message };
     });
   }
@@ -129,7 +132,8 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
               data: {
                 type: 'cpdlc',
                 message: cpdlcContent.content,
-                id: cpdlcContent.messageId.toString(),
+                messageId: cpdlcContent.messageId.toString(),
+                replyToId: cpdlcContent.replyToId?.toString(),
                 responseCode: cpdlcContent.responseCode,
                 recipientUser: {
                   connect: { id: recipientStation.id },
@@ -161,14 +165,16 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
               },
             });
 
-            createResponse('success', uuidv4().split('-')[0], '', {
-              gateway: AuthorityCategory.Telex,
-              action: AuthorityAction.ReceiveTelexMessage,
-              telex: {
-                sender: message.identifier,
-                message: message.message,
-              },
-            });
+            recipientSocket.send(
+              createResponse('success', uuidv4().split('-')[0], '', {
+                gateway: AuthorityCategory.Telex,
+                action: AuthorityAction.ReceiveTelexMessage,
+                telex: {
+                  sender: message.identifier,
+                  message: message.message,
+                },
+              }),
+            );
           }
         }
       }
@@ -182,7 +188,7 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
     accessToken: string,
     callsign: string,
   ) {
-    const interval = randomInt(45000, 75000);
+    const interval = randomInt(35000, 75000);
 
     this.pollingIntervals[userId] = setTimeout(
       async () => await this.pollUser(userId, accessToken, callsign),

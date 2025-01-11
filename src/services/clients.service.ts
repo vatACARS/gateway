@@ -33,7 +33,7 @@ export class ClientsService {
 
   getClientByStationCode(stationCode: string): Socket | undefined {
     for (const client of this.clients.values()) {
-      if (client._station === stationCode) {
+      if (client._stationCode === stationCode) {
         return client;
       }
     }
