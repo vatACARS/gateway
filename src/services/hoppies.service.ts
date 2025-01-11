@@ -90,7 +90,7 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async pollUser(
-    userId: string,
+    socketId: string,
     accessToken: string,
     callsign: string,
   ) {
@@ -113,7 +113,7 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
       ).then((data) => data.text());
 
       const messages = await this.parseResponse(data);
-      const recipientSocket = this.clientsService.getClientByClientId(userId);
+      const recipientSocket = this.clientsService.getClientByClientId(socketId);
       if (recipientSocket) {
         const recipientStation = await this.prisma.station.findUnique({
           where: { acarsUser: recipientSocket._userId },
@@ -177,14 +177,14 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
   }
 
   private schedulePolling(
-    userId: string,
+    socketId: string,
     accessToken: string,
     callsign: string,
   ) {
     const interval = randomInt(45000, 75000);
 
-    this.pollingIntervals[userId] = setTimeout(
-      async () => await this.pollUser(userId, accessToken, callsign),
+    this.pollingIntervals[socketId] = setTimeout(
+      async () => await this.pollUser(socketId, accessToken, callsign),
       interval,
     );
   }
@@ -198,8 +198,11 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
     connectedUsers.forEach((user) => {
       const hoppies = user.oauthAccounts[0];
       const station = user.currPosition;
+      const socketId = this.clientsService.getClientByStationCode(
+        user.currPosition.logonCode,
+      );
       if (hoppies && station)
-        this.schedulePolling(user.id, hoppies.accessToken, station.logonCode);
+        this.schedulePolling(socketId, hoppies.accessToken, station.logonCode);
     });
 
     setTimeout(() => this.startPolling(), 75000);
