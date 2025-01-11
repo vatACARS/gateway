@@ -72,6 +72,8 @@ model Message {
   sender          String?
   recipient       String?
   responseCode    String?
+  messageId       String?
+  replyToId       String?
   type            String
   message         String
   received        Boolean   @default(false)
