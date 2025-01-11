@@ -115,38 +115,60 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
       const messages = await this.parseResponse(data);
       const recipientSocket = this.clientsService.getClientByClientId(userId);
       if (recipientSocket) {
-        for (const message of messages) {
-          const cpdlcContent = await this.parseCPDLCMessage(message.message);
+        const recipientStation = await this.prisma.station.findUnique({
+          where: { acarsUser: recipientSocket.id },
+        });
+        if (!recipientStation) return;
 
-          recipientSocket.send(
+        for (const message of messages) {
+          if (message.messageType === 'cpdlc') {
+            const cpdlcContent = await this.parseCPDLCMessage(message.message);
+
+            await this.prisma.message.create({
+              data: {
+                type: 'cpdlc',
+                message: cpdlcContent.content,
+                id: cpdlcContent.messageId.toString(),
+                responseCode: cpdlcContent.responseCode,
+                recipientUser: {
+                  connect: { id: recipientStation.id },
+                },
+              },
+            });
+
+            recipientSocket.send(
+              createResponse('success', uuidv4().split('-')[0], '', {
+                gateway: AuthorityCategory.CPDLC,
+                action: AuthorityAction.ReceiveCPDLCMessage,
+                cpdlc: {
+                  sender: message.identifier,
+                  messageId: cpdlcContent.messageId,
+                  replyToId: cpdlcContent.replyToId,
+                  responseCode: cpdlcContent.responseCode,
+                  message: cpdlcContent.content,
+                },
+              }),
+            );
+          } else {
+            await this.prisma.message.create({
+              data: {
+                type: 'telex',
+                message: message.message,
+                recipientUser: {
+                  connect: { id: recipientStation.id },
+                },
+              },
+            });
+
             createResponse('success', uuidv4().split('-')[0], '', {
-              gateway:
-                message.messageType === 'telex'
-                  ? AuthorityCategory.Telex
-                  : AuthorityCategory.CPDLC,
-              action:
-                message.messageType === 'telex'
-                  ? AuthorityAction.ReceiveTelexMessage
-                  : AuthorityAction.ReceiveCPDLCMessage,
-              cpdlc:
-                message.messageType === 'telex'
-                  ? null
-                  : {
-                      sender: message.identifier,
-                      messageId: cpdlcContent.messageId,
-                      replyToId: cpdlcContent.replyToId,
-                      responseCode: cpdlcContent.responseCode,
-                      message: cpdlcContent.content,
-                    },
-              telex:
-                message.messageType !== 'telex'
-                  ? null
-                  : {
-                      sender: message.identifier,
-                      message: message.message,
-                    },
-            }),
-          );
+              gateway: AuthorityCategory.Telex,
+              action: AuthorityAction.ReceiveTelexMessage,
+              telex: {
+                sender: message.identifier,
+                message: message.message,
+              },
+            });
+          }
         }
       }
     } catch (e) {
