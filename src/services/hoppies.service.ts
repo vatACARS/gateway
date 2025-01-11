@@ -116,7 +116,7 @@ export class HoppiesService implements OnModuleInit, OnModuleDestroy {
       const recipientSocket = this.clientsService.getClientByClientId(userId);
       if (recipientSocket) {
         const recipientStation = await this.prisma.station.findUnique({
-          where: { acarsUser: recipientSocket.id },
+          where: { acarsUser: recipientSocket._userId },
         });
         if (!recipientStation) return;
 
