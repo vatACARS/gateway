@@ -80,5 +80,5 @@ model Message {
   updatedAt       DateTime  @updatedAt
 
   senderUser      Station?  @relation("SenderRelation", fields: [sender], references: [id])
-  receipientUser  Station?  @relation("ReceiverRelation", fields: [recipient], references: [id])
+  recipientUser   Station?  @relation("ReceiverRelation", fields: [recipient], references: [id])
 }
