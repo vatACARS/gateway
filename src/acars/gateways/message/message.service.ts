@@ -41,7 +41,7 @@ export class MessageService {
           senderUser: {
             connect: { id: senderStation.id },
           },
-          receipientUser: receiverStation
+          recipientUser: receiverStation
             ? { connect: { id: receiverStation.id } }
             : undefined,
           message,
@@ -105,7 +105,7 @@ export class MessageService {
           senderUser: {
             connect: { id: senderStation.id },
           },
-          receipientUser: receiverStation
+          recipientUser: receiverStation
             ? { connect: { id: receiverStation.id } }
             : undefined,
           message,
