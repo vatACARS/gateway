@@ -68,6 +68,8 @@ export class StationService {
 
         return newStation;
       }
+    }, {
+      timeout: 10000,
     });
   }
 
